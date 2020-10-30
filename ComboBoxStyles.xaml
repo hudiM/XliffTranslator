@@ -17,7 +17,6 @@
                     </LinearGradientBrush>
                 </Border.BorderBrush>
                 <Border.Background>
-
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                         <LinearGradientBrush.GradientStops>
                             <GradientStopCollection>
@@ -26,7 +25,6 @@
                             </GradientStopCollection>
                         </LinearGradientBrush.GradientStops>
                     </LinearGradientBrush>
-
                 </Border.Background>
             </Border>
             <Border
