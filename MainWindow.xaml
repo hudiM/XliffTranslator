@@ -1,0 +1,246 @@
+﻿<Window
+    x:Class="XliffTranslate.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:XliffTranslate"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    x:Name="TheWindow"
+    Title="TranslaterThingy"
+    d:DataContext="{d:DesignInstance Type=local:MainWindow}"
+    AllowsTransparency="True"
+    FontSize="14"
+    Opacity="0"
+    WindowStyle="None"
+    mc:Ignorable="d">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="CheckBoxStyles.xaml" />
+                <ResourceDictionary Source="ButtonStyles.xaml" />
+                <ResourceDictionary Source="TextBoxStyles.xaml" />
+                <ResourceDictionary Source="ComboBoxStyles.xaml" />
+                <ResourceDictionary>
+                    <local:BoolInverterConverter x:Key="BoolInverterConverter" />
+                </ResourceDictionary>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Window.Triggers>
+        <EventTrigger RoutedEvent="Window.Loaded">
+            <BeginStoryboard>
+                <Storyboard Name="FormFade">
+                    <DoubleAnimation
+                        Name="FormFadeAnimation"
+                        AutoReverse="False"
+                        RepeatBehavior="1x"
+                        Storyboard.TargetProperty="(Window.Opacity)"
+                        From="0.0"
+                        To="1.0"
+                        Duration="0:0:1" />
+                </Storyboard>
+            </BeginStoryboard>
+        </EventTrigger>
+    </Window.Triggers>
+
+    <Grid Background="#070707" MouseDown="MoveScreen">
+        <Grid Margin="15">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <!--#region ControlPanel-->
+            <Grid Margin="0,0,0,25">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+                    <Button
+                        x:Name="LoadButton"
+                        Width="150"
+                        Margin="0,0,5,0"
+                        Content="Load"
+                        Foreground="White"
+                        Style="{StaticResource PrettyButton}" />
+                    <CheckBox
+                        Width="28"
+                        Height="28"
+                        IsChecked="{Binding IsTranslationsLoaded}"
+                        IsEnabled="False"
+                        Template="{StaticResource PrettyCheckBox}" />
+                    <TextBox
+                        x:Name="SearchTextBox"
+                        Width="350"
+                        Margin="5,0,5,0"
+                        IsEnabled="{Binding IsTranslationsLoaded}"
+                        KeyDown="SearchTextBoxEnter"
+                        Style="{StaticResource PrettyTextBox}" />
+                    <Button
+                        x:Name="PreviousButton"
+                        Width="75"
+                        Foreground="White"
+                        IsEnabled="{Binding IsTranslationsLoaded}"
+                        Style="{StaticResource PrettyButton}">
+                        <TextBlock
+                            FontSize="18"
+                            FontWeight="Bold"
+                            Text="⮜" />
+                    </Button>
+                    <Button
+                        x:Name="NextButton"
+                        Width="75"
+                        Margin="5,0,5,0"
+                        Foreground="White"
+                        IsEnabled="{Binding IsTranslationsLoaded}"
+                        Style="{StaticResource PrettyButton}">
+                        <Button.Content>
+                            <TextBlock
+                                FontSize="18"
+                                FontWeight="Bold"
+                                Text="⮞" />
+                        </Button.Content>
+                    </Button>
+                    <ComboBox
+                        x:Name="FilteredTranslationSelector"
+                        MinWidth="150"
+                        DisplayMemberPath="Id"
+                        IsEditable="True"
+                        IsEnabled="{Binding IsTranslationsLoaded}"
+                        IsTextSearchEnabled="True"
+                        ItemsSource="{Binding FilteredTranslations}"
+                        MaxDropDownHeight="600"
+                        SelectedItem="{Binding SelectedItem}"
+                        Style="{StaticResource PrettyComboBox}" />
+                    <Button
+                        x:Name="SaveToFileButton"
+                        Width="150"
+                        Margin="5,0,0,0"
+                        Content="Save Translations"
+                        Foreground="White"
+                        IsEnabled="{Binding CanSaveTranslations}"
+                        Style="{StaticResource PrettyButton}" />
+                </StackPanel>
+                <Button
+                    x:Name="CloseButton"
+                    Grid.Column="1"
+                    Width="150"
+                    HorizontalAlignment="Right"
+                    Content="Close"
+                    Foreground="White"
+                    Style="{StaticResource PrettyButton}" />
+            </Grid>
+            <!--#endregion ControlPanel-->
+
+            <!--#region Editor-->
+            <Grid
+                x:Name="EditorGrid"
+                Grid.Row="1"
+                Margin="5"
+                Visibility="{Binding EditorVisiblity}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="150" />
+                </Grid.ColumnDefinitions>
+
+                <TextBlock
+                    Grid.ColumnSpan="3"
+                    Margin="0,0,0,10"
+                    FontSize="20"
+                    Foreground="White"
+                    Text="Edit Translation" />
+
+                <TextBlock
+                    Grid.Row="1"
+                    Foreground="White"
+                    Text="Source" />
+                <TextBox
+                    Grid.Row="2"
+                    Grid.Column="0"
+                    Height="30"
+                    VerticalAlignment="Top"
+                    IsReadOnly="True"
+                    Style="{StaticResource PrettyTextBox}"
+                    Text="{Binding SelectedItem.Source}" />
+
+                <TextBlock
+                    Grid.Row="1"
+                    Grid.Column="1"
+                    Margin="5,0,5,0"
+                    Foreground="White"
+                    Text="Target" />
+                <TextBox
+                    Grid.Row="2"
+                    Grid.Column="1"
+                    Height="30"
+                    Margin="5,0,5,0"
+                    VerticalAlignment="Top"
+                    Style="{StaticResource PrettyTextBox}"
+                    Text="{Binding SelectedItem.Target}" />
+
+                <TextBlock
+                    Grid.Row="1"
+                    Grid.Column="2"
+                    Foreground="White"
+                    Text="State" />
+                <ComboBox
+                    Grid.Row="2"
+                    Grid.Column="2"
+                    Height="30"
+                    VerticalAlignment="Top"
+                    ItemsSource="{Binding TranslationStates}"
+                    SelectedItem="{Binding SelectedItem.State}"
+                    Style="{StaticResource PrettyComboBox}" />
+
+                <Button
+                    x:Name="SaveLineButton"
+                    Grid.Row="3"
+                    Grid.ColumnSpan="3"
+                    Margin="0,10,0,10"
+                    VerticalAlignment="Top"
+                    Content="Save"
+                    Foreground="White"
+                    Style="{StaticResource PrettyButton}" />
+            </Grid>
+            <!--#endregion Editor-->
+
+            <!--#region Log-->
+            <Border
+                Grid.Row="2"
+                Margin="5"
+                Padding="5"
+                BorderBrush="#424242"
+                BorderThickness="2">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl DockPanel.Dock="Bottom" ItemsSource="{Binding LogEntries}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock
+                                    FontSize="12"
+                                    Foreground="{Binding ColorBrush}"
+                                    Text="{Binding Message}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+            <!--#endregion Log-->
+        </Grid>
+    </Grid>
+</Window>
