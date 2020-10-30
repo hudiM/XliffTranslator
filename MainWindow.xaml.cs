@@ -38,7 +38,7 @@ namespace XliffTranslate
             FilteredTranslationSelector.SelectionChanged += FilterSelectionChanged;
 
             Log("Started.", LogLevel.Ok);
-            Log("Version: Alpha 1.0", LogLevel.Info);
+            Log("Version: Alpha 1.1", LogLevel.Info);
 
             TranslationStates.Add("new");
             TranslationStates.Add("needs-review-translation");
@@ -66,7 +66,20 @@ namespace XliffTranslate
             {
                 XmlDocument doc = LoadDocument(path);
                 LoadTranslations(doc);
+
+                if (translations == null)
+                {
+                    Log("Failed to load translations.", LogLevel.Ok);
+                    return;
+                }
+                if (translations.Count == 0)
+                {
+                    Log("No translations found.", LogLevel.Warning);
+                    return;
+                }
+
                 IsTranslationsLoaded = true;
+
                 Log("Translations succesfully loaded.", LogLevel.Ok);
             }
             catch (Exception ex)
@@ -107,11 +120,27 @@ namespace XliffTranslate
         {
             Log($"Loading translations.");
 
-            var groupNode = doc.DocumentElement.FirstChild.FirstChild.NextSibling.FirstChild;
+            XmlNode groupNode;
+            try
+            {
+                groupNode = doc.DocumentElement.GetElementsByTagName("group")[0];
+            }
+            catch (Exception)
+            {
+                Log("Couldn't find group node.", LogLevel.Error);
+                return;
+            }
 
             foreach (XmlElement translationNode in groupNode.ChildNodes)
             {
-                CreateTranslationItem(translationNode);
+                try
+                {
+                    CreateTranslationItem(translationNode);
+                }
+                catch (Exception)
+                {
+                    Log("Failed to create translation element.", LogLevel.Error);
+                }
             }
 
             FilteredTranslations = new ObservableCollection<Translation>(translations);
@@ -143,7 +172,7 @@ namespace XliffTranslate
 
         private void FilterTranslations()
         {
-            if (SearchTextBox.Text == null || SearchTextBox.Text == String.Empty)
+            if (SearchTextBox.Text == null || SearchTextBox.Text == string.Empty)
             {
                 FilteredTranslations = new ObservableCollection<Translation>(translations);
                 Log($"Translations unfiltered, new amount {FilteredTranslations.Count}.");
@@ -243,22 +272,43 @@ namespace XliffTranslate
 
             var path = fileDialog.FileName;
 
-            if (path == null || path.Equals(String.Empty))
+            if (path == null || path.Equals(string.Empty))
             {
                 Log($"No file selected, aborting save. Path=[{path}]", LogLevel.Error);
                 return;
             }
 
             XmlDocument doc = new XmlDocument();
-            doc.LoadXml(originalContent);
+            try
+            {
+                doc.LoadXml(originalContent);
+            }
+            catch (Exception ex)
+            {
+                Log(ex.Message, LogLevel.Error);
+                return;
+            }
 
             ReplaceTranslations(doc);
 
-            //File.Copy(path, path.Replace(".xlf", "_backup.xlf"), true);
+            if (TranslationChangeRequests.Count > 0)
+            {
+                Log("Failed to replace the following translations:", LogLevel.Warning);
+                foreach (var request in TranslationChangeRequests)
+                {
+                    Log($"Id: {request.Id}, Source: {request.Source}, Target: {request.Target}, State: {request.State}", LogLevel.Warning);
+                }
+            }
 
-            //Log($"Created backup. Path=[{path.Replace(".xlf", "_backup.xlf")}]");
-
-            doc.Save(path);
+            try
+            {
+                doc.Save(path);
+            }
+            catch (Exception ex)
+            {
+                Log(ex.Message, LogLevel.Error);
+                return;
+            }
 
             Log($"Saved modified document. Path=[{path}]", LogLevel.Ok);
 
@@ -267,11 +317,23 @@ namespace XliffTranslate
             LoadTranslations(path);
             FilterTranslations();
             SelectTranslationById(selectedItemId);
+
+            if (TranslationChangeRequests.Count > 0)
+                CanSaveTranslations = true;
         }
 
         private void ReplaceTranslations(XmlDocument doc)
         {
-            var groupNode = doc.DocumentElement.FirstChild.FirstChild.NextSibling.FirstChild;
+            XmlNode groupNode;
+            try
+            {
+                groupNode = doc.DocumentElement.GetElementsByTagName("group")[0];
+            }
+            catch (Exception)
+            {
+                Log("Couldn't find group node.", LogLevel.Error);
+                return;
+            }
 
             foreach (XmlElement translationNode in groupNode.ChildNodes)
             {

@@ -5,12 +5,14 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:XliffTranslate"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:watermark="clr-namespace:XliffTranslate.Watermark"
     x:Name="TheWindow"
     Title="TranslaterThingy"
     d:DataContext="{d:DesignInstance Type=local:MainWindow}"
     AllowsTransparency="True"
     FontSize="14"
     Opacity="0"
+    TextBlock.Foreground="White"
     WindowStyle="None"
     mc:Ignorable="d">
 
@@ -46,43 +48,74 @@
     </Window.Triggers>
 
     <Grid Background="#070707" MouseDown="MoveScreen">
+        <!--#region ControlPanel-->
+        <Grid>
+            <Button
+                x:Name="CloseButton"
+                Width="50"
+                Height="25"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Content="Close"
+                Style="{StaticResource PrettyButton}" />
+        </Grid>
+        <!--#endregion ControlPanel-->
         <Grid Margin="15">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
-            <!--#region ControlPanel-->
-            <Grid Margin="0,0,0,25">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel HorizontalAlignment="Left" Orientation="Horizontal">
+
+            <!--#region File Handling-->
+            <StackPanel Grid.Row="0" Margin="5,5,5,25">
+                <TextBlock FontSize="20" Text="File Options" />
+
+                <StackPanel Margin="0,5,0,5" Orientation="Horizontal">
                     <Button
                         x:Name="LoadButton"
                         Width="150"
+                        Height="30"
                         Margin="0,0,5,0"
-                        Content="Load"
-                        Foreground="White"
+                        Content="Load from file"
                         Style="{StaticResource PrettyButton}" />
-                    <CheckBox
-                        Width="28"
-                        Height="28"
-                        IsChecked="{Binding IsTranslationsLoaded}"
-                        IsEnabled="False"
-                        Template="{StaticResource PrettyCheckBox}" />
-                    <TextBox
-                        x:Name="SearchTextBox"
-                        Width="350"
-                        Margin="5,0,5,0"
-                        IsEnabled="{Binding IsTranslationsLoaded}"
-                        KeyDown="SearchTextBoxEnter"
-                        Style="{StaticResource PrettyTextBox}" />
+                    <Button
+                        x:Name="SaveToFileButton"
+                        Width="150"
+                        Height="30"
+                        HorizontalAlignment="Left"
+                        Content="Save to file"
+                        IsEnabled="{Binding CanSaveTranslations}"
+                        Style="{StaticResource PrettyButton}" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Translation loaded: " />
+                    <TextBlock Text="{Binding IsTranslationsLoaded}" />
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Amount of pending changes: " />
+                    <TextBlock Text="{Binding TranslationChangeRequests.Count}" />
+                </StackPanel>
+            </StackPanel>
+            <!--#endregion File Handling-->
+
+            <!--#region Selector-->
+            <StackPanel
+                Grid.Row="1"
+                Margin="5"
+                Visibility="{Binding EditorVisiblity}">
+                <TextBlock
+                    Margin="0,0,0,5"
+                    FontSize="20"
+                    Text="Translation Selector" />
+
+                <DockPanel>
                     <Button
                         x:Name="PreviousButton"
                         Width="75"
-                        Foreground="White"
                         IsEnabled="{Binding IsTranslationsLoaded}"
                         Style="{StaticResource PrettyButton}">
                         <TextBlock
@@ -94,7 +127,6 @@
                         x:Name="NextButton"
                         Width="75"
                         Margin="5,0,5,0"
-                        Foreground="White"
                         IsEnabled="{Binding IsTranslationsLoaded}"
                         Style="{StaticResource PrettyButton}">
                         <Button.Content>
@@ -104,120 +136,114 @@
                                 Text="⮞" />
                         </Button.Content>
                     </Button>
-                    <ComboBox
-                        x:Name="FilteredTranslationSelector"
-                        MinWidth="150"
-                        DisplayMemberPath="Id"
-                        IsEditable="True"
-                        IsEnabled="{Binding IsTranslationsLoaded}"
-                        IsTextSearchEnabled="True"
-                        ItemsSource="{Binding FilteredTranslations}"
-                        MaxDropDownHeight="600"
-                        SelectedItem="{Binding SelectedItem}"
-                        Style="{StaticResource PrettyComboBox}" />
-                    <Button
-                        x:Name="SaveToFileButton"
-                        Width="150"
-                        Margin="5,0,0,0"
-                        Content="Save Translations"
-                        Foreground="White"
-                        IsEnabled="{Binding CanSaveTranslations}"
-                        Style="{StaticResource PrettyButton}" />
-                </StackPanel>
-                <Button
-                    x:Name="CloseButton"
-                    Grid.Column="1"
-                    Width="150"
-                    HorizontalAlignment="Right"
-                    Content="Close"
-                    Foreground="White"
-                    Style="{StaticResource PrettyButton}" />
-            </Grid>
-            <!--#endregion ControlPanel-->
+
+                    <AdornerDecorator>
+                        <TextBox
+                            x:Name="SearchTextBox"
+                            IsEnabled="{Binding IsTranslationsLoaded}"
+                            KeyDown="SearchTextBoxEnter"
+                            Style="{StaticResource PrettyTextBox}">
+                            <watermark:WatermarkService.Watermark>
+                                <TextBlock
+                                    Margin="5,0,0,0"
+                                    VerticalAlignment="Center"
+                                    FontStyle="Italic"
+                                    Foreground="White">
+                                    Type here to filter results...
+                                </TextBlock>
+                            </watermark:WatermarkService.Watermark>
+                        </TextBox>
+                    </AdornerDecorator>
+                </DockPanel>
+
+                <ComboBox
+                    x:Name="FilteredTranslationSelector"
+                    Height="28"
+                    MinWidth="150"
+                    Margin="0,5,0,5"
+                    DisplayMemberPath="Id"
+                    IsEditable="True"
+                    IsEnabled="{Binding IsTranslationsLoaded}"
+                    IsTextSearchEnabled="True"
+                    ItemsSource="{Binding FilteredTranslations}"
+                    MaxDropDownHeight="600"
+                    SelectedItem="{Binding SelectedItem}"
+                    Style="{StaticResource PrettyComboBox}" />
+            </StackPanel>
+            <!--#endregion Selector-->
 
             <!--#region Editor-->
-            <Grid
-                x:Name="EditorGrid"
-                Grid.Row="1"
-                Margin="5"
+            <StackPanel
+                Grid.Row="2"
+                Margin="5,15,5,5"
                 Visibility="{Binding EditorVisiblity}">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="150" />
-                </Grid.ColumnDefinitions>
 
                 <TextBlock
-                    Grid.ColumnSpan="3"
-                    Margin="0,0,0,10"
+                    Margin="0,0,0,5"
                     FontSize="20"
-                    Foreground="White"
                     Text="Edit Translation" />
 
-                <TextBlock
-                    Grid.Row="1"
-                    Foreground="White"
-                    Text="Source" />
-                <TextBox
-                    Grid.Row="2"
-                    Grid.Column="0"
-                    Height="30"
-                    VerticalAlignment="Top"
-                    IsReadOnly="True"
-                    Style="{StaticResource PrettyTextBox}"
-                    Text="{Binding SelectedItem.Source}" />
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="150" />
+                    </Grid.ColumnDefinitions>
 
-                <TextBlock
-                    Grid.Row="1"
-                    Grid.Column="1"
-                    Margin="5,0,5,0"
-                    Foreground="White"
-                    Text="Target" />
-                <TextBox
-                    Grid.Row="2"
-                    Grid.Column="1"
-                    Height="30"
-                    Margin="5,0,5,0"
-                    VerticalAlignment="Top"
-                    Style="{StaticResource PrettyTextBox}"
-                    Text="{Binding SelectedItem.Target}" />
+                    <TextBlock Grid.Row="0" Text="Source" />
+                    <TextBox
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        Height="30"
+                        VerticalAlignment="Top"
+                        IsReadOnly="True"
+                        Style="{StaticResource PrettyTextBox}"
+                        Text="{Binding SelectedItem.Source}" />
 
-                <TextBlock
-                    Grid.Row="1"
-                    Grid.Column="2"
-                    Foreground="White"
-                    Text="State" />
-                <ComboBox
-                    Grid.Row="2"
-                    Grid.Column="2"
-                    Height="30"
-                    VerticalAlignment="Top"
-                    ItemsSource="{Binding TranslationStates}"
-                    SelectedItem="{Binding SelectedItem.State}"
-                    Style="{StaticResource PrettyComboBox}" />
+                    <TextBlock
+                        Grid.Row="0"
+                        Grid.Column="1"
+                        Margin="5,0,5,0"
+                        Text="Target" />
+                    <TextBox
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Height="30"
+                        Margin="5,0,5,0"
+                        VerticalAlignment="Top"
+                        Style="{StaticResource PrettyTextBox}"
+                        Text="{Binding SelectedItem.Target}" />
+
+                    <TextBlock
+                        Grid.Row="0"
+                        Grid.Column="2"
+                        Text="State" />
+                    <ComboBox
+                        Grid.Row="1"
+                        Grid.Column="2"
+                        Height="30"
+                        VerticalAlignment="Top"
+                        ItemsSource="{Binding TranslationStates}"
+                        SelectedItem="{Binding SelectedItem.State}"
+                        Style="{StaticResource PrettyComboBox}" />
+                </Grid>
 
                 <Button
                     x:Name="SaveLineButton"
-                    Grid.Row="3"
-                    Grid.ColumnSpan="3"
                     Margin="0,10,0,10"
                     VerticalAlignment="Top"
                     Content="Save"
-                    Foreground="White"
                     Style="{StaticResource PrettyButton}" />
-            </Grid>
+            </StackPanel>
             <!--#endregion Editor-->
 
             <!--#region Log-->
             <Border
-                Grid.Row="2"
+                Grid.Row="3"
                 Margin="5"
                 Padding="5"
                 BorderBrush="#424242"
